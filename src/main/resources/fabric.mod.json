@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "more_codecs",
+  "version": "${version}",
+  "name": "More Codecs",
+  "description": "Codec utilities",
+  "authors": ["Nucleoid Contributors"],
+  "license": "LGPLv3",
+  "environment": "*",
+  "entrypoints": {
+    "main": []
+  },
+  "mixins": [],
+  "depends": {
+    "minecraft": "1.16.x"
+  }
+}
