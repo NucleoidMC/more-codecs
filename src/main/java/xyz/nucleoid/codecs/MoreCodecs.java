@@ -79,4 +79,8 @@ public final class MoreCodecs {
     public static <A, T> Codec<A> withOps(DynamicOps<T> ops, Function<A, T> encode, Function<T, DataResult<A>> decode) {
         return new MappedOpsCodec<>(ops, encode, decode);
     }
+
+    public static <K, V> Codec<Map<K, V>> dispatchByMapKey(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
+        return new DispatchMapCodec<>(keyCodec, valueCodec);
+    }
 }
