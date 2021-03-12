@@ -20,10 +20,12 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
 public final class MoreCodecs {
     public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM)
@@ -46,6 +48,10 @@ public final class MoreCodecs {
     public static final Codec<DyeColor> DYE_COLOR = stringVariants(DyeColor.values(), DyeColor::getName);
 
     public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
+
+    public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
+        return listOrUnit(codec).xmap(list -> list.toArray(factory.apply(0)), Arrays::asList);
+    }
 
     public static <T> Codec<List<T>> listOrUnit(Codec<T> codec) {
         return Codec.either(codec, codec.listOf())
