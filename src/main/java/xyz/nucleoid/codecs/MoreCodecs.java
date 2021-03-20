@@ -54,10 +54,10 @@ public final class MoreCodecs {
     }
 
     public static <T> Codec<List<T>> listOrUnit(Codec<T> codec) {
-        return Codec.either(codec, codec.listOf())
+        return Codec.either(codec.listOf(), codec)
                 .xmap(
-                        either -> either.map(MoreCodecs::unitArrayList, Function.identity()),
-                        list -> list.size() == 1 ? Either.left(list.get(0)) : Either.right(list)
+                        either -> either.map(Function.identity(), MoreCodecs::unitArrayList),
+                        list -> list.size() == 1 ? Either.right(list.get(0)) : Either.left(list)
                 );
     }
 
