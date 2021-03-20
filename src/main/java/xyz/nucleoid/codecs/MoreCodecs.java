@@ -20,8 +20,8 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -37,7 +37,7 @@ public final class MoreCodecs {
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPE_CODEC, BLOCK_STATE)
             .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::new), Either::left);
 
-    public static final Codec<Text> TEXT = withJson(
+    public static final Codec<MutableText> TEXT = withJson(
             Text.Serializer::toJsonTree,
             json -> {
                 MutableText text = Text.Serializer.fromJson(json);
@@ -50,12 +50,19 @@ public final class MoreCodecs {
     public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
-        return listOrUnit(codec).xmap(list -> list.toArray(factory.apply(0)), Arrays::asList);
+        return listToArray(listOrUnit(codec), factory);
     }
 
     public static <T> Codec<List<T>> listOrUnit(Codec<T> codec) {
         return Codec.either(codec, codec.listOf())
-                .xmap(either -> either.map(Collections::singletonList, Function.identity()), Either::right);
+                .xmap(
+                        either -> either.map(MoreCodecs::unitArrayList, Function.identity()),
+                        list -> list.size() == 1 ? Either.left(list.get(0)) : Either.right(list)
+                );
+    }
+
+    public static <T> Codec<T[]> listToArray(Codec<List<T>> codec, IntFunction<T[]> factory) {
+        return codec.xmap(list -> list.toArray(factory.apply(0)), Arrays::asList);
     }
 
     public static <A> Codec<A> stringVariants(A[] values, Function<A, String> asName) {
@@ -88,5 +95,11 @@ public final class MoreCodecs {
 
     public static <K, V> Codec<Map<K, V>> dispatchByMapKey(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
         return new DispatchMapCodec<>(keyCodec, valueCodec);
+    }
+
+    private static <T> List<T> unitArrayList(T t) {
+        List<T> list = new ArrayList<>(1);
+        list.add(t);
+        return list;
     }
 }
