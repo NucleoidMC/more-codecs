@@ -1,6 +1,7 @@
 package xyz.nucleoid.codecs;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonSyntaxException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -11,12 +12,18 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.predicate.BlockPredicate;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
 
@@ -24,8 +31,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public final class MoreCodecs {
     public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM)
@@ -46,8 +58,28 @@ public final class MoreCodecs {
     );
 
     public static final Codec<DyeColor> DYE_COLOR = stringVariants(DyeColor.values(), DyeColor::getName);
-
     public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
+    public static final Codec<Formatting> FORMATTING = stringVariants(Formatting.values(), Formatting::getName);
+    public static final Codec<GameMode> GAME_MODE = stringVariants(GameMode.values(), GameMode::getName);
+
+    public static final Codec<UUID> UUID_STRING = Codec.STRING.comapFlatMap(
+            string -> {
+                try {
+                    return DataResult.success(UUID.fromString(string));
+                } catch (IllegalArgumentException e) {
+                    return DataResult.error("Malformed UUID string");
+                }
+            },
+            UUID::toString
+    );
+
+    public static final Codec<BlockPredicate> BLOCK_PREDICATE = withJson(BlockPredicate::toJson, json -> {
+        try {
+            return DataResult.success(BlockPredicate.fromJson(json));
+        } catch (JsonSyntaxException e) {
+            return DataResult.error(e.getMessage());
+        }
+    });
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
         return listToArray(listOrUnit(codec), factory);
@@ -89,12 +121,51 @@ public final class MoreCodecs {
         return withOps(NbtOps.INSTANCE, encode, decode);
     }
 
+    public static <A> Codec<A> withNbt(
+            BiFunction<A, CompoundTag, CompoundTag> encode,
+            BiConsumer<A, CompoundTag> decode,
+            Supplier<A> factory
+    ) {
+        return withNbt(
+                value -> encode.apply(value, new CompoundTag()),
+                tag -> {
+                    if (tag instanceof CompoundTag) {
+                        A value = factory.get();
+                        decode.accept(value, (CompoundTag) tag);
+                        return DataResult.success(value);
+                    }
+                    return DataResult.error("Expected compound tag");
+                }
+        );
+    }
+
     public static <A, T> Codec<A> withOps(DynamicOps<T> ops, Function<A, T> encode, Function<T, DataResult<A>> decode) {
         return new MappedOpsCodec<>(ops, encode, decode);
     }
 
     public static <K, V> Codec<Map<K, V>> dispatchByMapKey(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
         return new DispatchMapCodec<>(keyCodec, valueCodec);
+    }
+
+    public static <T> Codec<RegistryKey<T>> registryKey(RegistryKey<? extends Registry<T>> registry) {
+        return Identifier.CODEC.xmap(
+                id -> RegistryKey.of(registry, id),
+                RegistryKey::getValue
+        );
+    }
+
+    public static <T> Codec<T> validate(Codec<T> codec, Function<T, DataResult<T>> validate) {
+        return codec.flatXmap(validate, validate);
+    }
+
+    public static <T> Codec<T> validate(Codec<T> codec, Predicate<T> validate, String error) {
+        return validate(codec, value -> {
+            if (validate.test(value)) {
+                return DataResult.success(value);
+            } else {
+                return DataResult.error(error);
+            }
+        });
     }
 
     private static <T> List<T> unitArrayList(T t) {
