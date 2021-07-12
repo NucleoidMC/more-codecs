@@ -18,6 +18,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.predicate.BlockPredicate;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -61,6 +62,14 @@ public final class MoreCodecs {
     public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
     public static final Codec<Formatting> FORMATTING = stringVariants(Formatting.values(), Formatting::getName);
     public static final Codec<GameMode> GAME_MODE = stringVariants(GameMode.values(), GameMode::getName);
+
+    public static final Codec<TextColor> TEXT_COLOR = Codec.STRING.comapFlatMap(
+            string -> {
+                TextColor color = TextColor.parse(string);
+                return color != null ? DataResult.success(color) : DataResult.error("Malformed TextColor");
+            },
+            TextColor::toString
+    );
 
     public static final Codec<UUID> UUID_STRING = Codec.STRING.comapFlatMap(
             string -> {
