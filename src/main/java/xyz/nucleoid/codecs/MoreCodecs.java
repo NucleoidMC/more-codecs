@@ -16,7 +16,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.predicate.BlockPredicate;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.DyeColor;
@@ -50,10 +49,10 @@ public final class MoreCodecs {
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPE_CODEC, BLOCK_STATE)
             .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::new), Either::left);
 
-    public static final Codec<MutableText> TEXT = withJson(
+    public static final Codec<Text> TEXT = withJson(
             Text.Serializer::toJsonTree,
             json -> {
-                MutableText text = Text.Serializer.fromJson(json);
+                Text text = Text.Serializer.fromJson(json);
                 return text != null ? DataResult.success(text) : DataResult.error("Malformed text");
             }
     );
