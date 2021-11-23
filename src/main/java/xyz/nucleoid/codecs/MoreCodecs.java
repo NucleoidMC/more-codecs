@@ -12,9 +12,9 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.predicate.BlockPredicate;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
@@ -40,14 +40,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class MoreCodecs {
-    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM)
+    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM.getCodec())
             .xmap(either -> either.map(Function.identity(), ItemStack::new), Either::left);
 
-    public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, Registry.BLOCK)
+    public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, Registry.BLOCK.getCodec())
             .xmap(either -> either.map(Function.identity(), Block::getDefaultState), Either::left);
 
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPE_CODEC, BLOCK_STATE)
-            .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::new), Either::left);
+            .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::of), Either::left);
 
     public static final Codec<Text> TEXT = withJson(
             Text.Serializer::toJsonTree,
@@ -125,21 +125,21 @@ public final class MoreCodecs {
         return withOps(JsonOps.INSTANCE, encode, decode);
     }
 
-    public static <A> Codec<A> withNbt(Function<A, Tag> encode, Function<Tag, DataResult<A>> decode) {
+    public static <A> Codec<A> withNbt(Function<A, NbtElement> encode, Function<NbtElement, DataResult<A>> decode) {
         return withOps(NbtOps.INSTANCE, encode, decode);
     }
 
     public static <A> Codec<A> withNbt(
-            BiFunction<A, CompoundTag, CompoundTag> encode,
-            BiConsumer<A, CompoundTag> decode,
+            BiFunction<A, NbtCompound, NbtCompound> encode,
+            BiConsumer<A, NbtCompound> decode,
             Supplier<A> factory
     ) {
         return withNbt(
-                value -> encode.apply(value, new CompoundTag()),
+                value -> encode.apply(value, new NbtCompound()),
                 tag -> {
-                    if (tag instanceof CompoundTag) {
+                    if (tag instanceof NbtCompound) {
                         A value = factory.get();
-                        decode.accept(value, (CompoundTag) tag);
+                        decode.accept(value, (NbtCompound) tag);
                         return DataResult.success(value);
                     }
                     return DataResult.error("Expected compound tag");
