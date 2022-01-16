@@ -7,6 +7,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
+import com.mojang.serialization.MapCodec;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -180,5 +182,39 @@ public final class MoreCodecs {
         List<T> list = new ArrayList<>(1);
         list.add(t);
         return list;
+    }
+
+    /**
+     * Returns a {@link MapCodec} to decode the given {@link Codec} as a field. This functions very similar to
+     * {@link Codec#optionalFieldOf(String, Object)}, however, when encountering an error, it will propagate this
+     * instead of returning {@link Optional#empty()}. This is useful when failed parsing should be handled instead of
+     * ignored.
+     *
+     * @param codec the field codec to use
+     * @param name the name of the field to parse
+     * @param defaultSupplier a supplier for a default value if not present
+     * @param <T> the codec parse type
+     * @return a {@link MapCodec} that decodes the specified field
+     */
+    public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, Supplier<? extends T> defaultSupplier) {
+        return new PropagatingOptionalFieldCodec<>(name, codec)
+                .xmap(opt -> opt.orElseGet(defaultSupplier), Optional::of);
+    }
+
+    /**
+     * Returns a {@link MapCodec} to decode the given {@link Codec} as a field. This functions very similar to
+     * {@link Codec#optionalFieldOf(String, Object)}, however, when encountering an error, it will propagate this
+     * instead of returning {@link Optional#empty()}. This is useful when failed parsing should be handled instead of
+     * ignored.
+     *
+     * @param codec the field codec to use
+     * @param name the name of the field to parse
+     * @param defaultValue a default value if not present
+     * @param <T> the codec parse type
+     * @return a {@link MapCodec} that decodes the specified field
+     */
+    public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, T defaultValue) {
+        return new PropagatingOptionalFieldCodec<>(name, codec)
+                .xmap(opt -> opt.orElse(defaultValue), Optional::of);
     }
 }
