@@ -4,7 +4,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.datafixers.util.Unit;
-import com.mojang.serialization.*;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.Lifecycle;
+import com.mojang.serialization.RecordBuilder;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -21,21 +25,26 @@ final class DispatchMapCodec<K, V> implements Codec<Map<K, V>> {
     @Override
     public <T> DataResult<Pair<Map<K, V>, T>> decode(DynamicOps<T> ops, T input) {
         return ops.getMap(input).flatMap(mapInput -> {
-            ImmutableMap.Builder<K, V> read = ImmutableMap.builder();
-            ImmutableList.Builder<Pair<T, T>> failed = ImmutableList.builder();
+            var read = ImmutableMap.<K, V>builder();
+            var failed = ImmutableList.<Pair<T, T>>builder();
 
-            DataResult<Unit> result = mapInput.entries().reduce(
+            var result = mapInput.entries().reduce(
                     DataResult.success(Unit.INSTANCE, Lifecycle.stable()),
-                    (r, pair) -> this.keyCodec.parse(ops, pair.getFirst()).flatMap(key -> {
-                        DataResult<Pair<K, V>> entry = this.valueCodec.apply(key).parse(ops, pair.getSecond())
-                                .map(value -> Pair.of(key, value));
-                        entry.error().ifPresent(e -> failed.add(pair));
+                    (r, pair) -> {
+                        var keyResult = this.keyCodec.parse(ops, pair.getFirst());
+                        keyResult.error().ifPresent(e -> failed.add(pair));
 
-                        return r.apply2stable((u, p) -> {
-                            read.put(p.getFirst(), p.getSecond());
-                            return u;
-                        }, entry);
-                    }),
+                        return keyResult.flatMap(key -> {
+                            var entry = this.valueCodec.apply(key).parse(ops, pair.getSecond())
+                                    .map(value -> Pair.of(key, value));
+                            entry.error().ifPresent(e -> failed.add(pair));
+
+                            return r.apply2stable((u, p) -> {
+                                read.put(p.getFirst(), p.getSecond());
+                                return u;
+                            }, entry);
+                        });
+                    },
                     (r1, r2) -> r1.apply2stable((u1, u2) -> u1, r2)
             );
 
