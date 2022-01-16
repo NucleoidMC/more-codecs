@@ -5,8 +5,7 @@ plugins {
 
 def env = System.getenv()
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = targetCompatibility = JavaVersion.VERSION_17
 
 archivesBaseName = project.archives_base_name
 version = project.mod_version
@@ -25,7 +24,6 @@ processResources {
     expand "version": project.version
   }
 }
-
 
 tasks.withType(JavaCompile) {
   options.encoding = "UTF-8"
