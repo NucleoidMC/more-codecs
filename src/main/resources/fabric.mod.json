@@ -11,6 +11,13 @@
     "main": []
   },
   "mixins": [],
+  "custom": {
+    "modmenu": {
+      "badges": [
+        "library"
+      ]
+    }
+  },
   "depends": {
     "minecraft": "*"
   }
