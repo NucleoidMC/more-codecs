@@ -8,6 +8,7 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -25,6 +26,7 @@ import net.minecraft.text.TextColor;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.world.GameMode;
@@ -96,6 +98,15 @@ public final class MoreCodecs {
             return DataResult.error(e.getMessage());
         }
     });
+
+    public static final Codec<Box> BOX = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.DOUBLE.fieldOf("minX").forGetter(box -> box.minX),
+            Codec.DOUBLE.fieldOf("minY").forGetter(box -> box.minY),
+            Codec.DOUBLE.fieldOf("minZ").forGetter(box -> box.minZ),
+            Codec.DOUBLE.fieldOf("maxX").forGetter(box -> box.maxX),
+            Codec.DOUBLE.fieldOf("maxY").forGetter(box -> box.maxY),
+            Codec.DOUBLE.fieldOf("maxZ").forGetter(box -> box.maxZ)
+    ).apply(instance, Box::new));
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
         return listToArray(listOrUnit(codec), factory);
