@@ -17,13 +17,16 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.predicate.BlockPredicate;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.util.Uuids;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
@@ -42,46 +45,49 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class MoreCodecs {
-    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM.getCodec())
+    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registries.ITEM.getCodec())
             .xmap(either -> either.map(Function.identity(), ItemStack::new), Either::left);
 
-    public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, Registry.BLOCK.getCodec())
+    public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, Registries.BLOCK.getCodec())
             .xmap(either -> either.map(Function.identity(), Block::getDefaultState), Either::left);
 
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPE_CODEC, BLOCK_STATE)
             .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::of), Either::left);
 
-    public static final Codec<Text> TEXT = withJson(
-            Text.Serializer::toJsonTree,
-            json -> {
-                Text text = Text.Serializer.fromJson(json);
-                return text != null ? DataResult.success(text) : DataResult.error("Malformed text");
-            }
-    );
+    /**
+     * @deprecated Use {@link Codecs#TEXT}
+     */
+    @Deprecated
+    public static final Codec<Text> TEXT = Codecs.TEXT;
 
-    public static final Codec<DyeColor> DYE_COLOR = stringVariants(DyeColor.values(), DyeColor::getName);
+    /**
+     * @deprecated Use {@link DyeColor#CODEC}
+     */
+    @Deprecated
+    public static final Codec<DyeColor> DYE_COLOR = DyeColor.CODEC;
     public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
-    public static final Codec<Formatting> FORMATTING = stringVariants(Formatting.values(), Formatting::getName);
-    public static final Codec<GameMode> GAME_MODE = stringVariants(GameMode.values(), GameMode::getName);
+    /**
+     * @deprecated Use {@link Formatting#CODEC}
+     */
+    @Deprecated
+    public static final Codec<Formatting> FORMATTING = Formatting.CODEC;
+    /**
+     * @deprecated Use {@link GameMode#CODEC}
+     */
+    @Deprecated
+    public static final Codec<GameMode> GAME_MODE = GameMode.CODEC;
 
-    public static final Codec<TextColor> TEXT_COLOR = Codec.STRING.comapFlatMap(
-            string -> {
-                TextColor color = TextColor.parse(string);
-                return color != null ? DataResult.success(color) : DataResult.error("Malformed TextColor");
-            },
-            TextColor::toString
-    );
+    /**
+     * @deprecated Use {@link TextColor#CODEC}
+     */
+    @Deprecated
+    public static final Codec<TextColor> TEXT_COLOR = TextColor.CODEC;
 
-    public static final Codec<UUID> UUID_STRING = Codec.STRING.comapFlatMap(
-            string -> {
-                try {
-                    return DataResult.success(UUID.fromString(string));
-                } catch (IllegalArgumentException e) {
-                    return DataResult.error("Malformed UUID string");
-                }
-            },
-            UUID::toString
-    );
+    /**
+     * @deprecated Use {@link Uuids#STRING_CODEC}
+     */
+    @Deprecated
+    public static final Codec<UUID> UUID_STRING = Uuids.STRING_CODEC;
 
     public static final Codec<BlockPredicate> BLOCK_PREDICATE = withJson(BlockPredicate::toJson, json -> {
         try {
@@ -190,10 +196,10 @@ public final class MoreCodecs {
      * instead of returning {@link Optional#empty()}. This is useful when failed parsing should be handled instead of
      * ignored.
      *
-     * @param codec the field codec to use
-     * @param name the name of the field to parse
+     * @param codec           the field codec to use
+     * @param name            the name of the field to parse
      * @param defaultSupplier a supplier for a default value if not present
-     * @param <T> the codec parse type
+     * @param <T>             the codec parse type
      * @return a {@link MapCodec} that decodes the specified field
      */
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, Supplier<? extends T> defaultSupplier) {
@@ -207,10 +213,10 @@ public final class MoreCodecs {
      * instead of returning {@link Optional#empty()}. This is useful when failed parsing should be handled instead of
      * ignored.
      *
-     * @param codec the field codec to use
-     * @param name the name of the field to parse
+     * @param codec        the field codec to use
+     * @param name         the name of the field to parse
      * @param defaultValue a default value if not present
-     * @param <T> the codec parse type
+     * @param <T>          the codec parse type
      * @return a {@link MapCodec} that decodes the specified field
      */
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, T defaultValue) {
