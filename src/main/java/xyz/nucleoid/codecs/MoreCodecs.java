@@ -5,8 +5,8 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
-import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.MapCodec;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.block.Block;
@@ -130,7 +130,7 @@ public final class MoreCodecs {
     }
 
     public static <A> Codec<A> withJson(Function<A, JsonElement> encode, Function<JsonElement, DataResult<A>> decode) {
-        return withOps(JsonOps.INSTANCE, encode, decode);
+        return Codecs.JSON_ELEMENT.comapFlatMap(decode, encode);
     }
 
     public static <A> Codec<A> withNbt(Function<A, NbtElement> encode, Function<NbtElement, DataResult<A>> decode) {
@@ -156,7 +156,10 @@ public final class MoreCodecs {
     }
 
     public static <A, T> Codec<A> withOps(DynamicOps<T> ops, Function<A, T> encode, Function<T, DataResult<A>> decode) {
-        return new MappedOpsCodec<>(ops, encode, decode);
+        return Codec.PASSTHROUGH.comapFlatMap(
+                input -> decode.apply(input.convert(ops).getValue()),
+                value -> new Dynamic<>(ops, encode.apply(value))
+        );
     }
 
     public static <K, V> Codec<Map<K, V>> dispatchByMapKey(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
