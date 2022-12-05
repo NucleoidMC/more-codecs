@@ -99,13 +99,13 @@ public final class MoreCodecs {
         }
     });
 
-    public static final Codec<Ingredient> INGREDIENT = Codecs.JSON_ELEMENT.flatXmap(element -> {
+    public static final Codec<Ingredient> INGREDIENT = withJson(Ingredient::toJson, element -> {
         try {
             return DataResult.success(Ingredient.fromJson(element));
         } catch (JsonParseException var2) {
             return DataResult.error(var2.getMessage());
         }
-    }, ingredient -> DataResult.success(ingredient.toJson()));
+    });
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
         return listToArray(listOrUnit(codec), factory);
