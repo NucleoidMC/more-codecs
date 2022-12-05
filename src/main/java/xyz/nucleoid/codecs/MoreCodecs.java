@@ -1,6 +1,7 @@
 package xyz.nucleoid.codecs;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
@@ -17,6 +18,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.predicate.BlockPredicate;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -96,6 +98,14 @@ public final class MoreCodecs {
             return DataResult.error(e.getMessage());
         }
     });
+
+    public static final Codec<Ingredient> INGREDIENT = Codecs.JSON_ELEMENT.flatXmap(element -> {
+        try {
+            return DataResult.success(Ingredient.fromJson(element));
+        } catch (JsonParseException var2) {
+            return DataResult.error(var2.getMessage());
+        }
+    }, ingredient -> DataResult.success(ingredient.toJson()));
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
         return listToArray(listOrUnit(codec), factory);
