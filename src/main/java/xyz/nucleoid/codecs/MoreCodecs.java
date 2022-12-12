@@ -102,7 +102,7 @@ public final class MoreCodecs {
     public static final Codec<Ingredient> INGREDIENT = withJson(Ingredient::toJson, element -> {
         try {
             return DataResult.success(Ingredient.fromJson(element));
-        } catch (JsonParseException var2) {
+        } catch (JsonParseException e) {
             return DataResult.error(var2.getMessage());
         }
     });
