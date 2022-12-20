@@ -103,7 +103,7 @@ public final class MoreCodecs {
         try {
             return DataResult.success(Ingredient.fromJson(element));
         } catch (JsonParseException e) {
-            return DataResult.error(var2.getMessage());
+            return DataResult.error(e.getMessage());
         }
     });
 
