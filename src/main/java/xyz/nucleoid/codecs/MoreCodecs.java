@@ -23,8 +23,6 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Uuids;
 import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -59,7 +57,7 @@ public final class MoreCodecs {
         try {
             return DataResult.success(BlockPredicate.fromJson(json));
         } catch (JsonSyntaxException e) {
-            return DataResult.error(e.getMessage());
+            return DataResult.error(e::getMessage);
         }
     });
 
@@ -72,7 +70,7 @@ public final class MoreCodecs {
         try {
             return DataResult.success(Ingredient.fromJson(element));
         } catch (JsonParseException e) {
-            return DataResult.error(e.getMessage());
+            return DataResult.error(e::getMessage);
         }
     });
 
@@ -104,7 +102,7 @@ public final class MoreCodecs {
 
         return keyCodec.comapFlatMap(key -> {
             A value = byKey.get(key);
-            return value != null ? DataResult.success(value) : DataResult.error("No variant with key '" + key + "'");
+            return value != null ? DataResult.success(value) : DataResult.error(() -> "No variant with key '" + key + "'");
         }, asKey);
     }
 
@@ -129,7 +127,7 @@ public final class MoreCodecs {
                         decode.accept(value, (NbtCompound) tag);
                         return DataResult.success(value);
                     }
-                    return DataResult.error("Expected compound tag");
+                    return DataResult.error(() -> "Expected compound tag");
                 }
         );
     }
@@ -145,19 +143,24 @@ public final class MoreCodecs {
         return new DispatchMapCodec<>(keyCodec, valueCodec);
     }
 
+    /**
+     * @deprecated Use {@link RegistryKey#createCodec}
+     */
+    @Deprecated
     public static <T> Codec<RegistryKey<T>> registryKey(RegistryKey<? extends Registry<T>> registry) {
-        return Identifier.CODEC.xmap(
-                id -> RegistryKey.of(registry, id),
-                RegistryKey::getValue
-        );
+        return RegistryKey.createCodec(registry);
     }
 
+    /**
+     * @deprecated Use {@link Codecs#validate}
+     */
+    @Deprecated
     public static <T> Codec<T> validate(Codec<T> codec, Function<T, DataResult<T>> validate) {
-        return codec.flatXmap(validate, validate);
+        return Codecs.validate(codec, validate);
     }
 
-    public static <T> Codec<T> validate(Codec<T> codec, Predicate<T> validate, String error) {
-        return validate(codec, value -> {
+    public static <T> Codec<T> validate(Codec<T> codec, Predicate<T> validate, Supplier<String> error) {
+        return Codecs.validate(codec, value -> {
             if (validate.test(value)) {
                 return DataResult.success(value);
             } else {
