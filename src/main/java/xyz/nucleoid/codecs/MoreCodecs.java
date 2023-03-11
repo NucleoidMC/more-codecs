@@ -26,7 +26,6 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.world.GameMode;
@@ -176,19 +175,24 @@ public final class MoreCodecs {
         return new DispatchMapCodec<>(keyCodec, valueCodec);
     }
 
+    /**
+     * @deprecated Use {@link RegistryKey#createCodec}
+     */
+    @Deprecated
     public static <T> Codec<RegistryKey<T>> registryKey(RegistryKey<? extends Registry<T>> registry) {
-        return Identifier.CODEC.xmap(
-                id -> RegistryKey.of(registry, id),
-                RegistryKey::getValue
-        );
+        return RegistryKey.createCodec(registry);
     }
 
+    /**
+     * @deprecated Use {@link Codecs#validate}
+     */
+    @Deprecated
     public static <T> Codec<T> validate(Codec<T> codec, Function<T, DataResult<T>> validate) {
-        return codec.flatXmap(validate, validate);
+        return Codecs.validate(codec, validate);
     }
 
     public static <T> Codec<T> validate(Codec<T> codec, Predicate<T> validate, Supplier<String> error) {
-        return validate(codec, value -> {
+        return Codecs.validate(codec, value -> {
             if (validate.test(value)) {
                 return DataResult.success(value);
             } else {
