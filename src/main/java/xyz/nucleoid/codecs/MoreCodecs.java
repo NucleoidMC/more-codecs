@@ -9,6 +9,7 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -23,7 +24,10 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Uuids;
 import net.minecraft.util.dynamic.Codecs;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
 
@@ -58,6 +62,11 @@ public final class MoreCodecs {
             return DataResult.error(e.getMessage());
         }
     });
+
+    public static final Codec<Box> BOX = RecordCodecBuilder.create(instance -> instance.group(
+            Vec3d.CODEC.fieldOf("min").forGetter(box -> new Vec3d(box.minX, box.minY, box.minZ)),
+            Vec3d.CODEC.fieldOf("max").forGetter(box -> new Vec3d(box.maxX, box.maxY, box.maxZ))
+    ).apply(instance, Box::new));
 
     public static final Codec<Ingredient> INGREDIENT = withJson(Ingredient::toJson, element -> {
         try {
