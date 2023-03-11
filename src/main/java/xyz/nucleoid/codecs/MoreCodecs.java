@@ -95,7 +95,7 @@ public final class MoreCodecs {
         try {
             return DataResult.success(BlockPredicate.fromJson(json));
         } catch (JsonSyntaxException e) {
-            return DataResult.error(e.getMessage());
+            return DataResult.error(e::getMessage);
         }
     });
 
@@ -103,7 +103,7 @@ public final class MoreCodecs {
         try {
             return DataResult.success(Ingredient.fromJson(element));
         } catch (JsonParseException e) {
-            return DataResult.error(e.getMessage());
+            return DataResult.error(e::getMessage);
         }
     });
 
@@ -135,7 +135,7 @@ public final class MoreCodecs {
 
         return keyCodec.comapFlatMap(key -> {
             A value = byKey.get(key);
-            return value != null ? DataResult.success(value) : DataResult.error("No variant with key '" + key + "'");
+            return value != null ? DataResult.success(value) : DataResult.error(() -> "No variant with key '" + key + "'");
         }, asKey);
     }
 
@@ -160,7 +160,7 @@ public final class MoreCodecs {
                         decode.accept(value, (NbtCompound) tag);
                         return DataResult.success(value);
                     }
-                    return DataResult.error("Expected compound tag");
+                    return DataResult.error(() -> "Expected compound tag");
                 }
         );
     }
@@ -187,7 +187,7 @@ public final class MoreCodecs {
         return codec.flatXmap(validate, validate);
     }
 
-    public static <T> Codec<T> validate(Codec<T> codec, Predicate<T> validate, String error) {
+    public static <T> Codec<T> validate(Codec<T> codec, Predicate<T> validate, Supplier<String> error) {
         return validate(codec, value -> {
             if (validate.test(value)) {
                 return DataResult.success(value);
