@@ -9,6 +9,7 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -22,13 +23,9 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Uuids;
 import net.minecraft.util.dynamic.Codecs;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
 
@@ -37,7 +34,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -55,40 +51,7 @@ public final class MoreCodecs {
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPE_CODEC, BLOCK_STATE)
             .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::of), Either::left);
 
-    /**
-     * @deprecated Use {@link Codecs#TEXT}
-     */
-    @Deprecated
-    public static final Codec<Text> TEXT = Codecs.TEXT;
-
-    /**
-     * @deprecated Use {@link DyeColor#CODEC}
-     */
-    @Deprecated
-    public static final Codec<DyeColor> DYE_COLOR = DyeColor.CODEC;
     public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
-    /**
-     * @deprecated Use {@link Formatting#CODEC}
-     */
-    @Deprecated
-    public static final Codec<Formatting> FORMATTING = Formatting.CODEC;
-    /**
-     * @deprecated Use {@link GameMode#CODEC}
-     */
-    @Deprecated
-    public static final Codec<GameMode> GAME_MODE = GameMode.CODEC;
-
-    /**
-     * @deprecated Use {@link TextColor#CODEC}
-     */
-    @Deprecated
-    public static final Codec<TextColor> TEXT_COLOR = TextColor.CODEC;
-
-    /**
-     * @deprecated Use {@link Uuids#STRING_CODEC}
-     */
-    @Deprecated
-    public static final Codec<UUID> UUID_STRING = Uuids.STRING_CODEC;
 
     public static final Codec<BlockPredicate> BLOCK_PREDICATE = withJson(BlockPredicate::toJson, json -> {
         try {
@@ -97,6 +60,11 @@ public final class MoreCodecs {
             return DataResult.error(e::getMessage);
         }
     });
+
+    public static final Codec<Box> BOX = RecordCodecBuilder.create(instance -> instance.group(
+            Vec3d.CODEC.fieldOf("min").forGetter(box -> new Vec3d(box.minX, box.minY, box.minZ)),
+            Vec3d.CODEC.fieldOf("max").forGetter(box -> new Vec3d(box.maxX, box.maxY, box.maxZ))
+    ).apply(instance, Box::new));
 
     public static final Codec<Ingredient> INGREDIENT = withJson(Ingredient::toJson, element -> {
         try {
