@@ -22,14 +22,8 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Uuids;
 import net.minecraft.util.dynamic.Codecs;
-import net.minecraft.world.GameMode;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
 
@@ -38,7 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -56,40 +49,7 @@ public final class MoreCodecs {
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPE_CODEC, BLOCK_STATE)
             .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::of), Either::left);
 
-    /**
-     * @deprecated Use {@link Codecs#TEXT}
-     */
-    @Deprecated
-    public static final Codec<Text> TEXT = Codecs.TEXT;
-
-    /**
-     * @deprecated Use {@link DyeColor#CODEC}
-     */
-    @Deprecated
-    public static final Codec<DyeColor> DYE_COLOR = DyeColor.CODEC;
     public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
-    /**
-     * @deprecated Use {@link Formatting#CODEC}
-     */
-    @Deprecated
-    public static final Codec<Formatting> FORMATTING = Formatting.CODEC;
-    /**
-     * @deprecated Use {@link GameMode#CODEC}
-     */
-    @Deprecated
-    public static final Codec<GameMode> GAME_MODE = GameMode.CODEC;
-
-    /**
-     * @deprecated Use {@link TextColor#CODEC}
-     */
-    @Deprecated
-    public static final Codec<TextColor> TEXT_COLOR = TextColor.CODEC;
-
-    /**
-     * @deprecated Use {@link Uuids#STRING_CODEC}
-     */
-    @Deprecated
-    public static final Codec<UUID> UUID_STRING = Uuids.STRING_CODEC;
 
     public static final Codec<BlockPredicate> BLOCK_PREDICATE = withJson(BlockPredicate::toJson, json -> {
         try {
