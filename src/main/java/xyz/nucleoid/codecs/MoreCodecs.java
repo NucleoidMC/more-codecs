@@ -1,5 +1,6 @@
 package xyz.nucleoid.codecs;
 
+import com.google.common.base.Preconditions;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
@@ -29,6 +30,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -73,6 +76,33 @@ public final class MoreCodecs {
             return DataResult.error(e::getMessage);
         }
     });
+
+    public static final Codec<URL> URL = Codec.STRING.comapFlatMap(string -> {
+        try {
+            return DataResult.success(new URL(string));
+        } catch (MalformedURLException e) {
+            return DataResult.error(() -> {
+                return "Malformed URL: " + e.getMessage();
+            });
+        }
+    }, java.net.URL::toString);
+
+    /**
+     * @param protocol the case-insensitive protocol to match
+     */
+    public static Codec<URL> url(String protocol) {
+        Preconditions.checkNotNull(protocol);
+
+        return validate(URL, url -> {
+            if (protocol.equalsIgnoreCase(url.getProtocol())) {
+                return DataResult.success(url);
+            } else {
+                return DataResult.error(() -> {
+                    return "Expected protocol '" + protocol + "' but found '" + url.getProtocol() + "'";
+                });
+            }
+        });
+    }
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
         return listToArray(listOrUnit(codec), factory);
