@@ -24,8 +24,10 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.Util;
 import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ColumnPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
@@ -43,6 +45,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 public final class MoreCodecs {
     public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registries.ITEM.getCodec())
@@ -86,6 +89,13 @@ public final class MoreCodecs {
             });
         }
     }, java.net.URL::toString);
+
+    public static Codec<ColumnPos> COLUMN_POS = Codec.INT_STREAM
+            .comapFlatMap(
+                    stream -> Util.toArray(stream, 2).map(values -> new ColumnPos(values[0], values[1])),
+                    pos -> IntStream.of(pos.x(), pos.z())
+            )
+            .stable();
 
     /**
      * @param protocol the case-insensitive protocol to match
