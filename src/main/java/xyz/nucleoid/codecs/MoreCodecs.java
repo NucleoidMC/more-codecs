@@ -2,8 +2,6 @@ package xyz.nucleoid.codecs;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -57,28 +55,28 @@ public final class MoreCodecs {
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPE_CODEC, BLOCK_STATE)
             .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::of), Either::left);
 
-    public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
+    /**
+     * @deprecated Use {@link EquipmentSlot#CODEC}
+     */
+    @Deprecated
+    public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = EquipmentSlot.CODEC;
 
-    public static final Codec<BlockPredicate> BLOCK_PREDICATE = withJson(BlockPredicate::toJson, json -> {
-        try {
-            return DataResult.success(BlockPredicate.fromJson(json));
-        } catch (JsonSyntaxException e) {
-            return DataResult.error(e::getMessage);
-        }
-    });
+    /**
+     * @deprecated Use {@link BlockPredicate#CODEC}
+     */
+    @Deprecated
+    public static final Codec<BlockPredicate> BLOCK_PREDICATE = BlockPredicate.CODEC;
 
     public static final Codec<Box> BOX = RecordCodecBuilder.create(instance -> instance.group(
             Vec3d.CODEC.fieldOf("min").forGetter(box -> new Vec3d(box.minX, box.minY, box.minZ)),
             Vec3d.CODEC.fieldOf("max").forGetter(box -> new Vec3d(box.maxX, box.maxY, box.maxZ))
     ).apply(instance, Box::new));
 
-    public static final Codec<Ingredient> INGREDIENT = withJson(Ingredient::toJson, element -> {
-        try {
-            return DataResult.success(Ingredient.fromJson(element));
-        } catch (JsonParseException e) {
-            return DataResult.error(e::getMessage);
-        }
-    });
+    /**
+     * @deprecated Use {@link Ingredient#ALLOW_EMPTY_CODEC}
+     */
+    @Deprecated
+    public static final Codec<Ingredient> INGREDIENT = Ingredient.ALLOW_EMPTY_CODEC;
 
     public static final Codec<URL> URL = Codec.STRING.comapFlatMap(string -> {
         try {
