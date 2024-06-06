@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -226,7 +227,7 @@ public final class MoreCodecs {
      * @return a {@link MapCodec} that decodes the specified field
      */
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, Supplier<? extends T> defaultSupplier) {
-        return new PropagatingOptionalFieldCodec<>(name, codec)
+        return Codecs.createStrictOptionalFieldCodec(codec, name)
                 .xmap(opt -> opt.orElseGet(defaultSupplier), Optional::of);
     }
 
@@ -241,9 +242,13 @@ public final class MoreCodecs {
      * @param defaultValue a default value if not present
      * @param <T>          the codec parse type
      * @return a {@link MapCodec} that decodes the specified field
+     *
+     * @deprecated Use {@link Codecs#createStrictOptionalFieldCodec(Codec, String, Object)}, which additionally compares
+     * values against the default value using {@link Objects#equals(Object, Object)}
      */
+    @Deprecated
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, T defaultValue) {
-        return new PropagatingOptionalFieldCodec<>(name, codec)
+        return Codecs.createStrictOptionalFieldCodec(codec, name)
                 .xmap(opt -> opt.orElse(defaultValue), Optional::of);
     }
 }
