@@ -89,7 +89,7 @@ public final class MoreCodecs {
         }
     }, java.net.URL::toString);
 
-    public static Codec<ColumnPos> COLUMN_POS = Codec.INT_STREAM
+    public static final Codec<ColumnPos> COLUMN_POS = Codec.INT_STREAM
             .comapFlatMap(
                     stream -> Util.decodeFixedLengthArray(stream, 2).map(values -> new ColumnPos(values[0], values[1])),
                     pos -> IntStream.of(pos.x(), pos.z())
