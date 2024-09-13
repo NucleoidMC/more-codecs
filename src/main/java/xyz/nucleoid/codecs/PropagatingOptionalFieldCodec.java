@@ -6,13 +6,15 @@ import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.MapLike;
 import com.mojang.serialization.RecordBuilder;
-import net.minecraft.util.dynamic.Codecs;
+import com.mojang.serialization.codecs.OptionalFieldCodec;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * @deprecated Use {@link Codecs.StrictOptionalField}
+ * @deprecated Use {@link OptionalFieldCodec} with {@code lenient} set to {@code false}, which additionally
+ * compares values against the default value using {@link Objects#equals(Object, Object)}.
  */
 @Deprecated
 final class PropagatingOptionalFieldCodec<A> extends MapCodec<Optional<A>> {
@@ -20,7 +22,7 @@ final class PropagatingOptionalFieldCodec<A> extends MapCodec<Optional<A>> {
     private final Codec<A> elementCodec;
 
     /**
-     * @deprecated Use {@link Codecs#createStrictOptionalFieldCodec(Codec, String)}
+     * @deprecated Use {@link Codec#optionalFieldOf(Codec, String)}
      */
     @Deprecated
     public PropagatingOptionalFieldCodec(final String name, final Codec<A> elementCodec) {

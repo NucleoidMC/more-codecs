@@ -13,6 +13,10 @@ import com.mojang.serialization.RecordBuilder;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * @deprecated Use {@link DispatchedMapCodec}
+ */
+@Deprecated
 final class DispatchMapCodec<K, V> implements Codec<Map<K, V>> {
     private final Codec<K> keyCodec;
     private final Function<K, Codec<V>> valueCodec;
