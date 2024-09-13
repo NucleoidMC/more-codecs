@@ -31,6 +31,8 @@ import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,8 +83,8 @@ public final class MoreCodecs {
 
     public static final Codec<URL> URL = Codec.STRING.comapFlatMap(string -> {
         try {
-            return DataResult.success(new URL(string));
-        } catch (MalformedURLException e) {
+            return DataResult.success(new URI(string).toURL());
+        } catch (URISyntaxException | MalformedURLException e) {
             return DataResult.error(() -> {
                 return "Malformed URL: " + e.getMessage();
             });
@@ -178,6 +180,10 @@ public final class MoreCodecs {
         );
     }
 
+    /**
+     * @deprecated Use {@link Codec#dispatchedMap}
+     */
+    @Deprecated
     public static <K, V> Codec<Map<K, V>> dispatchByMapKey(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
         return new DispatchMapCodec<>(keyCodec, valueCodec);
     }
@@ -191,15 +197,15 @@ public final class MoreCodecs {
     }
 
     /**
-     * @deprecated Use {@link Codecs#validate}
+     * @deprecated Use {@link Codec#validate}
      */
     @Deprecated
     public static <T> Codec<T> validate(Codec<T> codec, Function<T, DataResult<T>> validate) {
-        return Codecs.validate(codec, validate);
+        return codec.validate(validate);
     }
 
     public static <T> Codec<T> validate(Codec<T> codec, Predicate<T> validate, Supplier<String> error) {
-        return Codecs.validate(codec, value -> {
+        return codec.validate(value -> {
             if (validate.test(value)) {
                 return DataResult.success(value);
             } else {
@@ -216,7 +222,7 @@ public final class MoreCodecs {
 
     /**
      * Returns a {@link MapCodec} to decode the given {@link Codec} as a field. This functions very similar to
-     * {@link Codec#optionalFieldOf(String, Object)}, however, when encountering an error, it will propagate this
+     * {@link Codec#lenientOptionalFieldOf(String, Object)}, however, when encountering an error, it will propagate this
      * instead of returning {@link Optional#empty()}. This is useful when failed parsing should be handled instead of
      * ignored.
      *
@@ -227,13 +233,13 @@ public final class MoreCodecs {
      * @return a {@link MapCodec} that decodes the specified field
      */
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, Supplier<? extends T> defaultSupplier) {
-        return Codecs.createStrictOptionalFieldCodec(codec, name)
+        return codec.optionalFieldOf(name)
                 .xmap(opt -> opt.orElseGet(defaultSupplier), Optional::of);
     }
 
     /**
      * Returns a {@link MapCodec} to decode the given {@link Codec} as a field. This functions very similar to
-     * {@link Codec#optionalFieldOf(String, Object)}, however, when encountering an error, it will propagate this
+     * {@link Codec#lenientOptionalFieldOf(String, Object)}, however, when encountering an error, it will propagate this
      * instead of returning {@link Optional#empty()}. This is useful when failed parsing should be handled instead of
      * ignored.
      *
@@ -243,12 +249,12 @@ public final class MoreCodecs {
      * @param <T>          the codec parse type
      * @return a {@link MapCodec} that decodes the specified field
      *
-     * @deprecated Use {@link Codecs#createStrictOptionalFieldCodec(Codec, String, Object)}, which additionally compares
-     * values against the default value using {@link Objects#equals(Object, Object)}
+     * @deprecated Use {@link Codec#optionalFieldOf(Codec, String)}, which additionally compares values against the
+     * default value using {@link Objects#equals(Object, Object)}.
      */
     @Deprecated
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, T defaultValue) {
-        return Codecs.createStrictOptionalFieldCodec(codec, name)
+        return codec.optionalFieldOf(name)
                 .xmap(opt -> opt.orElse(defaultValue), Optional::of);
     }
 }
