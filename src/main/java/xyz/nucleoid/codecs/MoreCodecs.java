@@ -231,7 +231,10 @@ public final class MoreCodecs {
      * @param defaultSupplier a supplier for a default value if not present
      * @param <T>             the codec parse type
      * @return a {@link MapCodec} that decodes the specified field
+     * 
+     * @deprecated Use {@link Codec#optionalFieldOf(Codec, T)}
      */
+    @Deprecated
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, Supplier<? extends T> defaultSupplier) {
         return codec.optionalFieldOf(name)
                 .xmap(opt -> opt.orElseGet(defaultSupplier), Optional::of);
