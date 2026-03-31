@@ -10,26 +10,25 @@ import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.advancements.criterion.BlockPredicate;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.predicate.BlockPredicate;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ColumnPos;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Util;
-import net.minecraft.util.dynamic.Codecs;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.ColumnPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.gen.stateprovider.BlockStateProvider;
-import net.minecraft.world.gen.stateprovider.SimpleBlockStateProvider;
-
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
+import net.minecraft.world.level.levelgen.feature.stateproviders.SimpleStateProvider;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,14 +48,14 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 public final class MoreCodecs {
-    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registries.ITEM.getCodec())
+    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, BuiltInRegistries.ITEM.byNameCodec())
             .xmap(either -> either.map(Function.identity(), ItemStack::new), Either::left);
 
-    public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, Registries.BLOCK.getCodec())
-            .xmap(either -> either.map(Function.identity(), Block::getDefaultState), Either::left);
+    public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, BuiltInRegistries.BLOCK.byNameCodec())
+            .xmap(either -> either.map(Function.identity(), Block::defaultBlockState), Either::left);
 
-    public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPE_CODEC, BLOCK_STATE)
-            .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::of), Either::left);
+    public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.CODEC, BLOCK_STATE)
+            .xmap(either -> either.map(Function.identity(), SimpleStateProvider::simple), Either::left);
 
     /**
      * @deprecated Use {@link EquipmentSlot#CODEC}
@@ -70,16 +69,16 @@ public final class MoreCodecs {
     @Deprecated
     public static final Codec<BlockPredicate> BLOCK_PREDICATE = BlockPredicate.CODEC;
 
-    public static final Codec<Box> BOX = RecordCodecBuilder.create(instance -> instance.group(
-            Vec3d.CODEC.fieldOf("min").forGetter(box -> new Vec3d(box.minX, box.minY, box.minZ)),
-            Vec3d.CODEC.fieldOf("max").forGetter(box -> new Vec3d(box.maxX, box.maxY, box.maxZ))
-    ).apply(instance, Box::new));
+    public static final Codec<AABB> BOX = RecordCodecBuilder.create(instance -> instance.group(
+            Vec3.CODEC.fieldOf("min").forGetter(box -> new Vec3(box.minX, box.minY, box.minZ)),
+            Vec3.CODEC.fieldOf("max").forGetter(box -> new Vec3(box.maxX, box.maxY, box.maxZ))
+    ).apply(instance, AABB::new));
 
     /**
-     * @deprecated Use {@link Ingredient#ALLOW_EMPTY_CODEC}
+     * @deprecated Use {@link Ingredient#CODEC}
      */
     @Deprecated
-    public static final Codec<Ingredient> INGREDIENT = Ingredient.ALLOW_EMPTY_CODEC;
+    public static final Codec<Ingredient> INGREDIENT = Ingredient.CODEC;
 
     public static final Codec<URL> URL = Codec.STRING.comapFlatMap(string -> {
         try {
@@ -93,7 +92,7 @@ public final class MoreCodecs {
 
     public static final Codec<ColumnPos> COLUMN_POS = Codec.INT_STREAM
             .comapFlatMap(
-                    stream -> Util.decodeFixedLengthArray(stream, 2).map(values -> new ColumnPos(values[0], values[1])),
+                    stream -> Util.fixedSize(stream, 2).map(values -> new ColumnPos(values[0], values[1])),
                     pos -> IntStream.of(pos.x(), pos.z())
             )
             .stable();
@@ -148,24 +147,24 @@ public final class MoreCodecs {
     }
 
     public static <A> Codec<A> withJson(Function<A, JsonElement> encode, Function<JsonElement, DataResult<A>> decode) {
-        return Codecs.JSON_ELEMENT.comapFlatMap(decode, encode);
+        return ExtraCodecs.JSON.comapFlatMap(decode, encode);
     }
 
-    public static <A> Codec<A> withNbt(Function<A, NbtElement> encode, Function<NbtElement, DataResult<A>> decode) {
+    public static <A> Codec<A> withNbt(Function<A, Tag> encode, Function<Tag, DataResult<A>> decode) {
         return withOps(NbtOps.INSTANCE, encode, decode);
     }
 
     public static <A> Codec<A> withNbt(
-            BiFunction<A, NbtCompound, NbtCompound> encode,
-            BiConsumer<A, NbtCompound> decode,
+            BiFunction<A, CompoundTag, CompoundTag> encode,
+            BiConsumer<A, CompoundTag> decode,
             Supplier<A> factory
     ) {
         return withNbt(
-                value -> encode.apply(value, new NbtCompound()),
+                value -> encode.apply(value, new CompoundTag()),
                 tag -> {
-                    if (tag instanceof NbtCompound) {
+                    if (tag instanceof CompoundTag) {
                         A value = factory.get();
-                        decode.accept(value, (NbtCompound) tag);
+                        decode.accept(value, (CompoundTag) tag);
                         return DataResult.success(value);
                     }
                     return DataResult.error(() -> "Expected compound tag");
@@ -189,11 +188,11 @@ public final class MoreCodecs {
     }
 
     /**
-     * @deprecated Use {@link RegistryKey#createCodec}
+     * @deprecated Use {@link ResourceKey#codec}
      */
     @Deprecated
-    public static <T> Codec<RegistryKey<T>> registryKey(RegistryKey<? extends Registry<T>> registry) {
-        return RegistryKey.createCodec(registry);
+    public static <T> Codec<ResourceKey<T>> registryKey(ResourceKey<? extends Registry<T>> registry) {
+        return ResourceKey.codec(registry);
     }
 
     /**
