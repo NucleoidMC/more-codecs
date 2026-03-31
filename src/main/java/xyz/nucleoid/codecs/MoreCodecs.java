@@ -76,10 +76,10 @@ public final class MoreCodecs {
     ).apply(instance, Box::new));
 
     /**
-     * @deprecated Use {@link Ingredient#ALLOW_EMPTY_CODEC}
+     * @deprecated Use {@link Ingredient#CODEC}
      */
     @Deprecated
-    public static final Codec<Ingredient> INGREDIENT = Ingredient.ALLOW_EMPTY_CODEC;
+    public static final Codec<Ingredient> INGREDIENT = Ingredient.CODEC;
 
     public static final Codec<URL> URL = Codec.STRING.comapFlatMap(string -> {
         try {

@@ -1,11 +1,14 @@
 plugins {
-  id 'fabric-loom' version '1.6.+'
+  id 'fabric-loom' version '1.14.+'
   id 'maven-publish'
 }
 
 def env = System.getenv()
 
-archivesBaseName = project.archives_base_name
+base {
+  archivesName = project.archives_base_name
+}
+
 version = project.mod_version
 group = project.maven_group
 
