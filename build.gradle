@@ -1,5 +1,5 @@
 plugins {
-  id 'fabric-loom' version '1.14.+'
+  id 'net.fabricmc.fabric-loom' version '1.14.+'
   id 'maven-publish'
 }
 
@@ -14,8 +14,7 @@ group = project.maven_group
 
 dependencies {
   minecraft "com.mojang:minecraft:${project.minecraft_version}"
-  mappings loom.officialMojangMappings()
-  modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+  implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
 processResources {
@@ -45,11 +44,11 @@ jar {
 publishing {
   publications {
     mavenJava(MavenPublication) {
-      artifact(remapJar) {
-        builtBy remapJar
+      artifact(jar) {
+        builtBy jar
       }
       artifact(sourcesJar) {
-        builtBy remapSourcesJar
+        builtBy sourcesJar
       }
     }
   }
