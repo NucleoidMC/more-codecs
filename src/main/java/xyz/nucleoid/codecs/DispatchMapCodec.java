@@ -9,6 +9,7 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.Lifecycle;
 import com.mojang.serialization.RecordBuilder;
+import com.mojang.serialization.codecs.DispatchedMapCodec;
 
 import java.util.Map;
 import java.util.function.Function;

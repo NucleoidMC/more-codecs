@@ -26,7 +26,6 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
-import net.minecraft.world.level.levelgen.feature.stateproviders.SimpleStateProvider;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import java.net.MalformedURLException;
@@ -54,8 +53,8 @@ public final class MoreCodecs {
     public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, BuiltInRegistries.BLOCK.byNameCodec())
             .xmap(either -> either.map(Function.identity(), Block::defaultBlockState), Either::left);
 
-    public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.CODEC, BLOCK_STATE)
-            .xmap(either -> either.map(Function.identity(), SimpleStateProvider::simple), Either::left);
+    public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.TYPED_CODEC, BLOCK_STATE)
+            .xmap(either -> either.map(Function.identity(), BlockStateProvider::of), Either::left);
 
     /**
      * @deprecated Use {@link EquipmentSlot#CODEC}
@@ -84,9 +83,7 @@ public final class MoreCodecs {
         try {
             return DataResult.success(new URI(string).toURL());
         } catch (URISyntaxException | MalformedURLException e) {
-            return DataResult.error(() -> {
-                return "Malformed URL: " + e.getMessage();
-            });
+            return DataResult.error(() -> "Malformed URL: " + e.getMessage());
         }
     }, java.net.URL::toString);
 
@@ -103,13 +100,11 @@ public final class MoreCodecs {
     public static Codec<URL> url(String protocol) {
         Preconditions.checkNotNull(protocol);
 
-        return validate(URL, url -> {
+        return URL.validate(url -> {
             if (protocol.equalsIgnoreCase(url.getProtocol())) {
                 return DataResult.success(url);
             } else {
-                return DataResult.error(() -> {
-                    return "Expected protocol '" + protocol + "' but found '" + url.getProtocol() + "'";
-                });
+                return DataResult.error(() -> "Expected protocol '" + protocol + "' but found '" + url.getProtocol() + "'");
             }
         });
     }
@@ -230,8 +225,8 @@ public final class MoreCodecs {
      * @param defaultSupplier a supplier for a default value if not present
      * @param <T>             the codec parse type
      * @return a {@link MapCodec} that decodes the specified field
-     * 
-     * @deprecated Use {@link Codec#optionalFieldOf(Codec, T)}
+     *
+     * @deprecated Use {@link Codec#optionalFieldOf(String, Object)}
      */
     @Deprecated
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, Supplier<? extends T> defaultSupplier) {
@@ -251,12 +246,12 @@ public final class MoreCodecs {
      * @param <T>          the codec parse type
      * @return a {@link MapCodec} that decodes the specified field
      *
-     * @deprecated Use {@link Codec#optionalFieldOf(Codec, String)}, which additionally compares values against the
+     * @deprecated Use {@link Codec#optionalFieldOf(String, Object)}, which additionally compares values against the
      * default value using {@link Objects#equals(Object, Object)}.
      */
     @Deprecated
     public static <T> MapCodec<T> propagatingOptionalFieldOf(Codec<T> codec, String name, T defaultValue) {
         return codec.optionalFieldOf(name)
-                .xmap(opt -> opt.orElse(defaultValue), Optional::of);
+                .xmap(opt -> opt.orElse(defaultValue), Optional::ofNullable);
     }
 }

@@ -1,5 +1,5 @@
 plugins {
-  id 'net.fabricmc.fabric-loom' version '1.15.+'
+  id 'net.fabricmc.fabric-loom' version '1.18-SNAPSHOT'
   id 'maven-publish'
 }
 
@@ -25,16 +25,16 @@ processResources {
   }
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
   options.encoding = "UTF-8"
-  options.release = 21
+  options.release = 25
 }
 
 java {
   withSourcesJar()
 
-  sourceCompatibility = JavaVersion.VERSION_21
-  targetCompatibility = JavaVersion.VERSION_21
+  sourceCompatibility = JavaVersion.VERSION_25
+  targetCompatibility = JavaVersion.VERSION_25
 }
 
 jar {
